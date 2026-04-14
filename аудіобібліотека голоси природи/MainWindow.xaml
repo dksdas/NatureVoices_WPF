@@ -44,14 +44,14 @@
                     <TextBlock x:Name="LogoText" Text="Голоси природи" Foreground="#1B261E" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <StackPanel Grid.Row="1">
+                <StackPanel Grid.Row="1" x:Name="MenuStack">
                     <TextBlock x:Name="MenuLabel" Text="МЕНЮ" Foreground="#78A678" FontSize="10" FontWeight="Bold" Margin="10,0,0,10"/>
-                    <Button Content="🏠 Головна" Style="{StaticResource ForestButtonStyle}" Background="#C8E6C8"/>
-                    <Button x:Name="BtnForest" Content="🌲 Ліс" Style="{StaticResource ForestButtonStyle}" Margin="0,5"/>
-                    <Button x:Name="BtnWater" Content="🌊 Вода" Style="{StaticResource ForestButtonStyle}"/>
+                    <Button x:Name="BtnHome" Content="🏠 Головна" Style="{StaticResource ForestButtonStyle}" Background="#C8E6C8" Click="Filter_Click"/>
+                    <Button x:Name="BtnForest" Content="🌲 Ліс" Style="{StaticResource ForestButtonStyle}" Margin="0,5" Click="Filter_Click"/>
+                    <Button x:Name="BtnWater" Content="🌊 Вода" Style="{StaticResource ForestButtonStyle}" Click="Filter_Click"/>
                 </StackPanel>
 
-                <TextBlock Grid.Row="2" Text="🌿🍃🌿" Foreground="#C8E6C8" 
+                <TextBlock Grid.Row="2" Text="🌿🍃🌿" Foreground="#C8E6C8" x:Name="DecorLeaves"
                            FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.4" Margin="0,0,0,20"/>
 
                 <Border Grid.Row="3" x:Name="ThemePanel" Background="#C8E6C8" CornerRadius="20" Padding="4">
@@ -60,7 +60,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Background="#78A678" BorderThickness="0" Click="DayButton_Click">
+                        <Button x:Name="DayBtn" Grid.Column="0" Background="#78A678" BorderThickness="0" Click="DayButton_Click">
                             <Button.Resources>
                                 <Style TargetType="Border">
                                     <Setter Property="CornerRadius" Value="15"/>
@@ -71,10 +71,15 @@
                                 <TextBlock Text="День" FontWeight="Bold" Foreground="White" FontSize="12"/>
                             </StackPanel>
                         </Button>
-                        <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Click="NightButton_Click">
+                        <Button x:Name="NightBtn" Grid.Column="1" Background="Transparent" BorderThickness="0" Click="NightButton_Click">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="15"/>
+                                </Style>
+                            </Button.Resources>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="8,4">
-                                <TextBlock Text="🌙" FontSize="14" Margin="0,0,5,0" Opacity="0.5"/>
-                                <TextBlock x:Name="NightBtnText" Text="Ніч" Foreground="#2D3436" Opacity="0.5" FontSize="12"/>
+                                <TextBlock x:Name="MoonIcon" Text="🌙" FontSize="14" Margin="0,0,5,0" Opacity="0.5"/>
+                                <TextBlock x:Name="NightBtnText" Text="Ніч" Foreground="#2D3436" FontSize="12"/>
                             </StackPanel>
                         </Button>
                     </Grid>
@@ -104,9 +109,14 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="100"/>
                                 </Grid.ColumnDefinitions>
-                                <Border Background="#E0EEE0" CornerRadius="18" Width="36" Height="36">
+                                <Button Click="PlayButton_Click" Background="#E0EEE0" BorderThickness="0" Width="36" Height="36">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="18"/>
+                                        </Style>
+                                    </Button.Resources>
                                     <TextBlock Text="▶" Foreground="#1B261E" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="2,0,0,0"/>
-                                </Border>
+                                </Button>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0">
                                     <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="#2D3436"/>
                                     <TextBlock Text="{Binding Category}" FontSize="11" Foreground="#78A678"/>
@@ -126,27 +136,27 @@
                         <ColumnDefinition Width="150"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="Зараз грає:" FontSize="10" Foreground="Gray"/>
-                        <TextBlock Text="Карпатський ліс" FontWeight="Bold" Foreground="#2D3436"/>
+                        <TextBlock x:Name="NowPlayingLabel" Text="Зараз грає:" FontSize="10" Foreground="Gray"/>
+                        <TextBlock x:Name="PlayingNow" Text="..." FontWeight="Bold" Foreground="#2D3436"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,5">
-                            <Button Content="⏮" Background="Transparent" BorderThickness="0" Margin="10,0" FontSize="18"/>
-                            <Button Background="#1B261E" Foreground="White" Width="44" Height="44" BorderThickness="0">
+                            <Button Content="⏮" Click="Prev_Click" Background="Transparent" BorderThickness="0" Margin="10,0" FontSize="18" x:Name="BtnPrev"/>
+                            <Button x:Name="BtnPlayPause" Background="#1B261E" Foreground="White" Width="44" Height="44" BorderThickness="0" Click="PlayPause_Click">
                                 <Button.Resources>
                                     <Style TargetType="Border">
                                         <Setter Property="CornerRadius" Value="22"/>
                                     </Style>
                                 </Button.Resources>
-                                <TextBlock Text="▶"/>
+                                <TextBlock x:Name="PlayPauseIcon" Text="▶" FontSize="18" Margin="2,0,0,0"/>
                             </Button>
-                            <Button Content="⏭" Background="Transparent" BorderThickness="0" Margin="10,0" FontSize="18"/>
+                            <Button Content="⏭" Click="Next_Click" Background="Transparent" BorderThickness="0" Margin="10,0" FontSize="18" x:Name="BtnNext"/>
                         </StackPanel>
-                        <Slider Maximum="100" Value="40" Foreground="#78A678"/>
+                        <Slider x:Name="TimelineSlider" Minimum="0" Maximum="1" PreviewMouseLeftButtonUp="TimelineSlider_MouseUp" Foreground="#78A678"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <TextBlock Text="🔉" Margin="0,0,5,0"/>
-                        <Slider Width="70" Value="80"/>
+                        <TextBlock Text="🔉" x:Name="VolIcon" Margin="0,0,5,0"/>
+                        <Slider Width="70" Value="0.8" Minimum="0" Maximum="1" ValueChanged="Volume_Changed"/>
                     </StackPanel>
                 </Grid>
             </Border>
