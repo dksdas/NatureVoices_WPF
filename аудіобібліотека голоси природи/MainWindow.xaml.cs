@@ -18,78 +18,78 @@ namespace аудіобібліотека_голоси_природи
         private ObservableCollection<AudioTrack> allTracks = new ObservableCollection<AudioTrack>();
         private int currentTrackIndex = -1;
         private bool isPlaying = false;
-        private bool isDarkMode = false;
+        private string userRole;
 
         public class AudioTrack : INotifyPropertyChanged
         {
             public string Title { get; set; }
             public string Category { get; set; }
             public string FileName { get; set; }
-            private string _duration = "--:--";
-            public string Duration
-            {
-                get => _duration;
-                set { _duration = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Duration))); }
-            }
+            private string _dur = "--:--";
+            public string Duration { get => _dur; set { _dur = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Duration))); } }
             public event PropertyChangedEventHandler PropertyChanged;
         }
 
-        public MainWindow()
+        public MainWindow() { InitializeComponent(); }
+
+        public MainWindow(string role) : this()
         {
-            InitializeComponent();
-            CreateDataDirectory();
+            this.userRole = role;
+            if (userRole == "Admin") MainTitle.Text += " (Admin)";
+
             LoadData();
-            timer.Interval = TimeSpan.FromSeconds(0.5);
+
+            timer.Interval = TimeSpan.FromMilliseconds(200); 
             timer.Tick += Timer_Tick;
         }
 
-        private void CreateDataDirectory()
+        private void Timer_Tick(object sender, EventArgs e)
         {
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data");
-            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            if (mediaPlayer.NaturalDuration.HasTimeSpan)
+            {
+                TimelineSlider.Value = mediaPlayer.Position.TotalSeconds / mediaPlayer.NaturalDuration.TimeSpan.TotalSeconds;
+
+                string current = mediaPlayer.Position.ToString(@"m\:ss");
+                string total = mediaPlayer.NaturalDuration.TimeSpan.ToString(@"m\:ss");
+                TimeStatus.Text = $"{current} / {total}";
+            }
         }
 
         private void LoadData()
         {
-            allTracks = new ObservableCollection<AudioTrack>
-            {
+            allTracks = new ObservableCollection<AudioTrack> {
                 new AudioTrack { Title = "Ранковий ліс", Category = "Ліс", FileName = "forest_morning.mp3" },
                 new AudioTrack { Title = "Злива та грім", Category = "Дощ", FileName = "heavy_rain.mp3" },
                 new AudioTrack { Title = "Гірський струмок", Category = "Вода", FileName = "mountain_stream.mp3" },
                 new AudioTrack { Title = "Спів солов'я", Category = "Птахи", FileName = "nightingale.mp3" }
             };
             SoundsList.ItemsSource = allTracks;
-            foreach (var track in allTracks) UpdateTrackDuration(track);
+
+            foreach (var t in allTracks) UpdateTrackDuration(t);
         }
 
         private void UpdateTrackDuration(AudioTrack track)
         {
-            string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", track.FileName);
-            if (File.Exists(fullPath))
+            string p = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", track.FileName);
+            if (File.Exists(p))
             {
-                MediaPlayer tempPlayer = new MediaPlayer();
-                tempPlayer.Open(new Uri(fullPath));
-                tempPlayer.MediaOpened += (s, e) => {
-                    if (tempPlayer.NaturalDuration.HasTimeSpan)
-                        track.Duration = tempPlayer.NaturalDuration.TimeSpan.ToString(@"mm\:ss");
-                    tempPlayer.Close();
+                MediaPlayer mp = new MediaPlayer();
+                mp.Open(new Uri(p));
+                mp.MediaOpened += (s, e) => {
+                    if (mp.NaturalDuration.HasTimeSpan)
+                        track.Duration = mp.NaturalDuration.TimeSpan.ToString(@"m\:ss");
+                    mp.Close();
                 };
             }
-        }
-
-        private void Timer_Tick(object sender, EventArgs e)
-        {
-            if (mediaPlayer.NaturalDuration.HasTimeSpan)
-                TimelineSlider.Value = mediaPlayer.Position.TotalSeconds / mediaPlayer.NaturalDuration.TimeSpan.TotalSeconds;
         }
 
         private void PlayTrack(AudioTrack track)
         {
             if (track == null) return;
-            string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", track.FileName);
-            if (File.Exists(fullPath))
+            string p = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", track.FileName);
+            if (File.Exists(p))
             {
-                mediaPlayer.Open(new Uri(fullPath));
+                mediaPlayer.Open(new Uri(p));
                 mediaPlayer.Play();
                 PlayingNow.Text = track.Title;
                 PlayPauseIcon.Text = "⏸";
@@ -118,75 +118,65 @@ namespace аудіобібліотека_голоси_природи
 
         private void Filter_Click(object sender, RoutedEventArgs e)
         {
-            Button clickedButton = sender as Button;
-            string category = clickedButton.Content.ToString();
-
-            // Скидаємо фон усіх кнопок меню
-            BtnHome.Background = Brushes.Transparent;
-            BtnForest.Background = Brushes.Transparent;
-            BtnWater.Background = Brushes.Transparent;
-
-            // Ставимо активний фон натиснутій кнопці
-            clickedButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C8E6C8"));
-
-            if (category.Contains("Головна")) SoundsList.ItemsSource = allTracks;
-            else
-            {
-                string filter = category.Split(' ').Last();
-                SoundsList.ItemsSource = allTracks.Where(t => t.Category == filter).ToList();
-            }
+            var btn = (sender as Button);
+            BtnHome.Background = BtnForest.Background = BtnWater.Background = Brushes.Transparent;
+            btn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C8E6C8"));
+            if (btn.Name == "BtnHome") SoundsList.ItemsSource = allTracks;
+            else SoundsList.ItemsSource = allTracks.Where(t => btn.Content.ToString().Contains(t.Category)).ToList();
         }
 
-        private void Next_Click(object sender, RoutedEventArgs e)
+        private void Next_Click(object sender, RoutedEventArgs e) { if (currentTrackIndex < allTracks.Count - 1) PlayTrack(allTracks[++currentTrackIndex]); }
+        private void Prev_Click(object sender, RoutedEventArgs e) { if (currentTrackIndex > 0) PlayTrack(allTracks[--currentTrackIndex]); }
+
+        private void DayButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentTrackIndex < allTracks.Count - 1) PlayTrack(allTracks[++currentTrackIndex]);
+            SetTheme("#F4F7F4", "#E0EEE0", "#1B261E", "#808080", "#2D3436", true);
         }
 
-        private void Prev_Click(object sender, RoutedEventArgs e)
+        private void NightButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentTrackIndex > 0) PlayTrack(allTracks[--currentTrackIndex]);
+            SetTheme("#121212", "#1E1E1E", "#FFFFFF", "#B3B3B3", "#FFFFFF", false);
         }
-
-        private void DayButton_Click(object sender, RoutedEventArgs e) => SetTheme("#F4F7F4", "#E0EEE0", "#1B261E", Brushes.Black, Brushes.White, "#C8E6C8", true);
-
-        private void NightButton_Click(object sender, RoutedEventArgs e) => SetTheme("#1B261E", "#0D140F", "#FFFFFF", Brushes.White, "#2D3436", "#1B261E", false);
-
-        private void SetTheme(string rootBg, string sideBg, string textHex, Brush btnText, object playerBg, string themePanelBg, bool isDay)
+        private void SetTheme(string bgHex, string sideHex, string textHex, string subTextHex, string btnTextHex, bool isDay)
         {
-            isDarkMode = !isDay;
-            var textCol = new SolidColorBrush((Color)ColorConverter.ConvertFromString(textHex));
-            RootWindow.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(rootBg));
-            SidePanel.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(sideBg));
+            var bgColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString(bgHex));
+            var sideColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString(sideHex));
+            var textColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString(textHex));
+            var subTextColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString(subTextHex));
+            var btnTextColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString(btnTextHex));
 
-            MainTitle.Foreground = textCol;
-            LogoText.Foreground = textCol;
-            PlayingNow.Foreground = textCol;
-            NowPlayingLabel.Foreground = textCol;
-            BtnForest.Foreground = btnText;
-            BtnWater.Foreground = btnText;
-            BtnHome.Foreground = btnText;
-            NightBtnText.Foreground = btnText;
-            BtnPrev.Foreground = btnText;
-            BtnNext.Foreground = btnText;
-            VolIcon.Foreground = textCol;
-            DecorLeaves.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(isDay ? "#C8E6C8" : "#78A678"));
-            ThemePanel.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(themePanelBg));
+            RootWindow.Background = bgColor;
+            SidePanel.Background = sideColor;
+            PlayerBar.Background = isDay ? Brushes.White : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#282828"));
 
+            MainTitle.Foreground = textColor;
+            LogoText.Foreground = textColor;
+            PlayingNow.Foreground = textColor;
+            NowPlayingLabel.Foreground = subTextColor;
+            TimeStatus.Foreground = isDay ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#78A678")) : subTextColor;
+
+            BtnHome.Foreground = btnTextColor;
+            BtnForest.Foreground = btnTextColor;
+            BtnWater.Foreground = btnTextColor;
+
+            VolIcon.Foreground = textColor;
+            BtnPlayPause.Foreground = isDay ? Brushes.White : Brushes.Black;
+
+            DecorLeaves.Foreground = isDay ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C8E6C8")) : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3E4D3E"));
+            
+            ThemePanel.Background = isDay ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C8E6C8")) : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#282828"));
             if (isDay)
             {
                 DayBtn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#78A678"));
                 NightBtn.Background = Brushes.Transparent;
-                MoonIcon.Opacity = 0.5;
+                NightBtnText.Foreground = Brushes.Black;
             }
             else
             {
                 NightBtn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#78A678"));
                 DayBtn.Background = Brushes.Transparent;
-                MoonIcon.Opacity = 1;
+                NightBtnText.Foreground = Brushes.White;
             }
-
-            if (playerBg is string hex) PlayerBar.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
-            else PlayerBar.Background = (Brush)playerBg;
         }
     }
 }
